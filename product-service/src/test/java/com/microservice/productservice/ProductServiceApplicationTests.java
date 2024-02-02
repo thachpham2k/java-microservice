@@ -1,9 +1,14 @@
 package com.microservice.productservice;
 
+import com.microservice.productservice.dto.ProductRequest;
+import com.microservice.productservice.repository.IProductRepository;
+
 import java.math.BigDecimal;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,25 +17,23 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.microservice.productservice.dto.ProductRequest;
-import com.microservice.productservice.repository.IProductRepository;
 
 import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
-
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@Testcontainers
 @AutoConfigureMockMvc
 class ProductServiceApplicationTests {
 
 	@Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:4.4.2");
+    static final MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:4.0.10")).withExposedPorts(27017);
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvc mockMvc;    
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -48,7 +51,7 @@ class ProductServiceApplicationTests {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(productRequestString))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
+                .andExpect(status().isCreated());
         Assertions.assertEquals(1, productRepository.findAll().size());
     }
 
