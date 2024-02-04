@@ -1,10 +1,14 @@
 package com.microservice.orderservice.service;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import com.microservice.orderservice.dto.InventoryResponse;
 import com.microservice.orderservice.dto.OrderLineItemsDto;
 import com.microservice.orderservice.dto.OrderRequest;
 import com.microservice.orderservice.model.Order;
@@ -19,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderService {
 
     private final IOrderRepository orderRepository;
+    private final WebClient webClient;
     
     public void placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
@@ -27,8 +32,27 @@ public class OrderService {
                                         .stream()
                                         .map(this::mapToDto)
                                         .toList());
+
+        List<String> skuCodes = order.getOrderLineItemsList()
+                                    .stream()
+                                    .map(orderLineItem -> orderLineItem.getSkuCode())
+                                    .toList();
+
+        InventoryResponse[] inventoryResponses = webClient.get()
+                            .uri("http://localhost:8081/api/inventory?", 
+                                uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+                            .retrieve()
+                            .bodyToMono(InventoryResponse[].class)
+                            .block();
+
+        boolean allProductIsInStock = Arrays.stream(inventoryResponses).allMatch(inventoryResponse -> inventoryResponse.isInStock());
         
-        orderRepository.save(order);
+        if(allProductIsInStock) {
+            orderRepository.save(order);    
+        } else {
+            throw new IllegalArgumentException("Product is not in stock, please try it again");
+        }
+        
     }
 
     private OrderLineItems mapToDto(OrderLineItemsDto orderLineItemsDto) {
