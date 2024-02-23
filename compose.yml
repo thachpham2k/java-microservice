@@ -1,0 +1,217 @@
+---
+version: '3.8'
+services:
+  # Keycloack
+  keycloak-mysql:
+    container_name: keycloak-mysql
+    image: mysql:8.3.0
+    volumes:
+      - ./data/mysql-keycloak:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: password
+    # ports:
+    #   - "3305:3306"
+    expose:
+      - "3306"
+    networks:
+      - keycloak-net
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:23.0.7
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: mysql
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    expose:
+      - "8080"
+    volumes:
+      - ./data/realms/:/opt/keycloak/data/import/
+    networks:
+      - keycloak-net
+    depends_on:
+      - keycloak-mysql
+  # Discovery server
+  discovery-server:
+    image: java-microservice/discovery-server:latest
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_USERNAME=${EUREKA_USERNAME}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD}
+      - EUREKA_HOST=discovery-server
+      - EUREKA_PORT=8761
+    networks:
+      - project-net
+  
+  # api gateway
+  api-gateway:
+    image: java-microservice/api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8081:8081"
+    expose:
+      - "8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
+      - EUREKA_USERNAME=${EUREKA_USERNAME}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD}
+      - EUREKA_HOST=discovery-server
+      - EUREKA_PORT=8761
+      - KEYCLOAK_HOST=keycloak
+      - KEYCLOAK_PORT=8080
+    networks:
+      - project-net
+      - keycloak-net
+    depends_on:
+      - discovery-server
+      - keycloak
+
+  ## Product-Service
+  mongo-product:
+    container_name: mongo-product
+    image: mongo:4.4.14-rc0-focal
+    restart: always
+    ports:
+      - "27017:27017"
+    expose:
+      - "27017"
+    volumes:
+      - ./data/mongo-data:/data/db
+    networks:
+      - product-service-net
+
+  product-service:
+    container_name: product-service
+    image: java-microservice/product-service:latest
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - PRODUCTSERVICEDB_HOST=mongo-product
+      - PRODUCTSERVICEDB_PORT=27017
+      - EUREKA_USERNAME=${EUREKA_USERNAME}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD}
+      - EUREKA_HOST=discovery-server
+      - EUREKA_PORT=8761
+    networks:
+      - project-net
+      - product-service-net
+    ports:
+      - "8084:8084"
+    expose:
+      - "8084"
+    depends_on:
+      - mongo-product
+      - discovery-server
+      - api-gateway
+    restart: always
+
+  # Order-Service
+  mysql-order:
+    container_name: mysql-order
+    image: mysql:8.3.0
+    environment:
+      MYSQL_DATABASE: order_service
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql
+      MYSQL_ROOT_PASSWORD: mysql
+    expose:
+      - "3306"
+    volumes:
+      - ./data/mysql-order:/var/lib/mysql
+    networks:
+      - order-service-net
+    restart: always
+  order-service:
+    container_name: order-service
+    image: java-microservice/order-service:latest
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - ORDERSERVICEDB_HOST=mysql-order
+      - ORDERSERVICEDB_PORT=3306
+      - ORDERSERVICEDB_USERNAME=root
+      - ORDERSERVICEDB_PSSWD=mysql
+      - EUREKA_USERNAME=${EUREKA_USERNAME}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD}
+      - EUREKA_HOST=discovery-server
+      - EUREKA_PORT=8761
+    expose:
+      - "8085"
+    networks:
+      - order-service-net
+      - project-net
+    depends_on:
+      - mysql-order
+      - discovery-server
+      - api-gateway
+    restart: always
+
+  ## Inventory
+  mysql-inventory:
+    container_name: mysql-inventory
+    image: mysql:8.3.0
+    environment:
+      MYSQL_DATABASE: inventory_service
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql
+      MYSQL_ROOT_PASSWORD: mysql
+    # ports:
+    #   - "3307:3306"
+    expose:
+      - "3306"
+    volumes:
+      - ./data/mysql-inventory:/var/lib/mysql
+    networks:
+      - inventory-service-net
+    restart: always
+
+  inventory-service:
+    container_name: inventory-service
+    image: java-microservice/inventory-service:latest
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - INVENTORYSERVICEDB_HOST=mysql-inventory
+      - INVENTORYSERVICEDB_PORT=3306
+      - INVENTORYSERVICEDB_USERNAME=root
+      - INVENTORYSERVICEDB_PSSWD=mysql
+      - EUREKA_USERNAME=${EUREKA_USERNAME}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD}
+      - EUREKA_HOST=discovery-server
+      - EUREKA_PORT=8761
+    expose:
+      - "8086"
+    networks:
+      - inventory-service-net
+      - project-net
+    depends_on:
+      - mysql-inventory
+      - discovery-server
+      - api-gateway
+    restart: always
+
+# env_file:
+#   - docker.env
+    
+networks:
+  project-net:
+    driver: bridge
+  product-service-net:
+    driver: bridge
+  order-service-net:
+    driver: bridge
+  inventory-service-net:
+    driver: bridge
+  keycloak-net:
+    driver: bridge

@@ -8,4 +8,4 @@ docker run -d \
     -e MYSQL_PASSWORD=mysql \
     -e MYSQL_ROOT_PASSWORD=mysql \
     -v ~/data/mysql-inventory:/var/lib/mysql \
-    mysql:latest
+    mysql:8.3.0

@@ -1,5 +1,7 @@
 target/
 HELP.md
+mvnw
+mvnw.cmd
 !.mvn/wrapper/maven-wrapper.jar
 !**/.mvn/wrapper/
 !**/src/main/**/target/
@@ -48,3 +50,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### docker ###
+data/jarfile/*.jar
+data/mongo-data/*
+data/mysql-inventory/*
+data/mysql-keycloak/*
+data/mysql-order/*
