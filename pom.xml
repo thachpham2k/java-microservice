@@ -62,6 +62,40 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<plugin>
+                <groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>3.4.0</version>
+                <configuration>
+                    <from>
+                        <image>openjdk:17</image>
+                    </from>
+                    <to>
+                        <image>java-microservices/${project.artifactId}</image>
+                    </to>
+					<container>
+						<jvmFlags>
+							<jvmFlag>-Dspring.config.location=docker.properties</jvmFlag>
+						</jvmFlags>
+					</container>
+					<extraDirectories>
+						<paths>
+							<path>
+								<from>src/main/resources/</from>
+								<into>/</into>
+							</path>
+						</paths>
+					</extraDirectories>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>dockerBuild</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 </project>
