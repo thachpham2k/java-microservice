@@ -149,6 +149,8 @@ services:
       - EUREKA_PASSWORD=${EUREKA_PASSWORD}
       - EUREKA_HOST=discovery-server
       - EUREKA_PORT=8761
+    ports:
+      - "8085:8080"
     expose:
       - "8080"
     networks:
@@ -192,6 +194,8 @@ services:
       - EUREKA_PASSWORD=${EUREKA_PASSWORD}
       - EUREKA_HOST=discovery-server
       - EUREKA_PORT=8761
+    ports:
+      - "8086:8080"
     expose:
       - "8080"
     networks:
