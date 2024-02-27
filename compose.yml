@@ -1,6 +1,16 @@
 ---
 version: '3.8'
 services:
+  # zipkin
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    expose:
+      - "9411"
+    networks:
+      - project-net
   # Keycloack
   keycloak-mysql:
     container_name: keycloak-mysql
@@ -55,8 +65,12 @@ services:
       - EUREKA_PASSWORD=${EUREKA_PASSWORD}
       - EUREKA_HOST=discovery-server
       - EUREKA_PORT=8761
+      - ZIPKIN_HOST=zipkin
+      - ZIPKIN_PORT=9411
     networks:
       - project-net
+    depends_on:
+      - zipkin
   
   # api gateway
   api-gateway:
@@ -73,6 +87,8 @@ services:
       - EUREKA_PASSWORD=${EUREKA_PASSWORD}
       - EUREKA_HOST=discovery-server
       - EUREKA_PORT=8761
+      - ZIPKIN_HOST=zipkin
+      - ZIPKIN_PORT=9411
       - KEYCLOAK_HOST=keycloak
       - KEYCLOAK_PORT=8080
     networks:
@@ -81,6 +97,7 @@ services:
     depends_on:
       - discovery-server
       - keycloak
+      - zipkin
 
   ## Product-Service
   mongo-product:
@@ -107,6 +124,8 @@ services:
       - EUREKA_PASSWORD=${EUREKA_PASSWORD}
       - EUREKA_HOST=discovery-server
       - EUREKA_PORT=8761
+      - ZIPKIN_HOST=zipkin
+      - ZIPKIN_PORT=9411
     networks:
       - project-net
       - product-service-net
@@ -118,6 +137,7 @@ services:
       - mongo-product
       - discovery-server
       - api-gateway
+      - zipkin
     restart: always
 
   # Order-Service
@@ -149,6 +169,8 @@ services:
       - EUREKA_PASSWORD=${EUREKA_PASSWORD}
       - EUREKA_HOST=discovery-server
       - EUREKA_PORT=8761
+      - ZIPKIN_HOST=zipkin
+      - ZIPKIN_PORT=9411
     ports:
       - "8085:8080"
     expose:
@@ -160,6 +182,7 @@ services:
       - mysql-order
       - discovery-server
       - api-gateway
+      - zipkin
     restart: always
 
   ## Inventory
@@ -194,6 +217,8 @@ services:
       - EUREKA_PASSWORD=${EUREKA_PASSWORD}
       - EUREKA_HOST=discovery-server
       - EUREKA_PORT=8761
+      - ZIPKIN_HOST=zipkin
+      - ZIPKIN_PORT=9411
     ports:
       - "8086:8080"
     expose:
@@ -205,6 +230,7 @@ services:
       - mysql-inventory
       - discovery-server
       - api-gateway
+      - zipkin
     restart: always
 
 # env_file:
