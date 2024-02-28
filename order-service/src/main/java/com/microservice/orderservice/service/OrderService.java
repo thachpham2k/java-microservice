@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -11,12 +13,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.microservice.orderservice.dto.InventoryResponse;
 import com.microservice.orderservice.dto.OrderLineItemsDto;
 import com.microservice.orderservice.dto.OrderRequest;
+import com.microservice.orderservice.event.OrderPlacedEvent;
 import com.microservice.orderservice.model.Order;
 import com.microservice.orderservice.model.OrderLineItems;
 import com.microservice.orderservice.repository.IOrderRepository;
 
-import brave.Span;
-import brave.Tracer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,8 @@ public class OrderService {
 
     private final IOrderRepository orderRepository;
     private final WebClient.Builder webClientBuilder;
-    private final ObservationRegistry observationRegistry; 
+    private final ObservationRegistry observationRegistry;
+    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
     
     public String placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
@@ -58,6 +60,7 @@ public class OrderService {
 
             if (allProductsInStock) {
                 orderRepository.save(order);
+                kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
                 return "Order Placed";
             } else {
                 throw new IllegalArgumentException("Product is not in stock, please try again later");

@@ -1,6 +1,36 @@
 ---
 version: '3.8'
 services:
+  # kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    expose:
+      - 2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafka-net
+
+  broker:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: broker
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - kafka-net
+      - project-net
   # zipkin
   zipkin:
     image: openzipkin/zipkin
@@ -28,7 +58,6 @@ services:
       - "3306"
     networks:
       - keycloak-net
-
   keycloak:
     container_name: keycloak
     image: quay.io/keycloak/keycloak:23.0.7
@@ -112,7 +141,6 @@ services:
       - ./data/mongo-data:/data/db
     networks:
       - product-service-net
-
   product-service:
     container_name: product-service
     image: java-microservices/product-service:latest
@@ -171,6 +199,8 @@ services:
       - EUREKA_PORT=8761
       - ZIPKIN_HOST=zipkin
       - ZIPKIN_PORT=9411
+      - KAFKA_HOST=broker
+      - KAFKA_PORT=29092
     ports:
       - "8085:8080"
     expose:
@@ -203,7 +233,6 @@ services:
     networks:
       - inventory-service-net
     restart: always
-
   inventory-service:
     container_name: inventory-service
     image: java-microservices/inventory-service:latest
@@ -232,6 +261,35 @@ services:
       - api-gateway
       - zipkin
     restart: always
+  
+  # notification service
+  notification-service:
+    container_name: notification-service
+    image: java-microservices/notification-service:latest
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_USERNAME=${EUREKA_USERNAME}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD}
+      - EUREKA_HOST=discovery-server
+      - EUREKA_PORT=8761
+      - ZIPKIN_HOST=zipkin
+      - ZIPKIN_PORT=9411
+      - KAFKA_HOST=broker
+      - KAFKA_PORT=29092
+    ports:
+      - "8087:8080"
+    expose:
+      - "8080"
+    networks:
+      - inventory-service-net
+      - project-net
+    depends_on:
+      - mysql-inventory
+      - discovery-server
+      - api-gateway
+      - zipkin
+      - broker
+    restart: always
 
 # env_file:
 #   - docker.env
@@ -246,4 +304,6 @@ networks:
   inventory-service-net:
     driver: bridge
   keycloak-net:
+    driver: bridge
+  kafka-net:
     driver: bridge
