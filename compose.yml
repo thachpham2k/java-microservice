@@ -12,7 +12,6 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       - kafka-net
-
   broker:
     image: confluentinc/cp-kafka:7.0.1
     container_name: broker
@@ -290,6 +289,41 @@ services:
       - zipkin
       - broker
     restart: always
+  
+  ## Prometheus
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./data/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - product-service
+      - inventory-service
+      - order-service
+      - notification-service
+    networks:
+      - project-net
+      - grafana-net
+
+  grafana:
+    image: grafana/grafana-oss:10.2.4
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    links:
+      - prometheus:prometheus
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - grafana-net
+    user: '0'
 
 # env_file:
 #   - docker.env
@@ -306,4 +340,6 @@ networks:
   keycloak-net:
     driver: bridge
   kafka-net:
+    driver: bridge
+  grafana-net:
     driver: bridge

@@ -57,3 +57,6 @@ data/mongo-data/*
 data/mysql-inventory/*
 data/mysql-keycloak/*
 data/mysql-order/*
+
+### grafana ###
+grafana/
