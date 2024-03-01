@@ -6,10 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class InventoryResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class InventoryRequest {
     private String skuCode;
     private Integer quantity;
 }
