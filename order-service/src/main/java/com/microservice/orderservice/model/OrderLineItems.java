@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "order_line_items")
+@Table(name = "t_order_line_items")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -22,7 +22,7 @@ public class OrderLineItems {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String skuCode;
+    private String productId;
     private BigDecimal price;
     private Integer quantity;
 }

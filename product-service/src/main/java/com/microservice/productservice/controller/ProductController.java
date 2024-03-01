@@ -59,9 +59,9 @@ public class ProductController {
         return productService.getProductByProductId(productId);
     }
 
-    @GetMapping("skucode/{skucode}")
+    @GetMapping("/skucode")
     @ResponseStatus(HttpStatus.OK)
-    public ProductResponse getBySkuCode(@PathVariable String skucode) {
+    public ProductResponse getBySkuCode(@RequestParam("skucode") String skucode) {
         return productService.getProductBySkuCode(skucode);
     }
 

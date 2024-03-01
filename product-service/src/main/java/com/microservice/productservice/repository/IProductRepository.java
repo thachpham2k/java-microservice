@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import com.microservice.productservice.model.Product;
 
 public interface IProductRepository extends MongoRepository<Product, String> {
-    Product findBySkuCode(String skucode);
+    Product findBySkuCode(String skuCode);
     // @Query("{'categories': { $in: ?0 }}")
     List<Product> findByCategoriesIn(List<String> categories);
     // @Query("{'tags': { $in: ?0 }}")
