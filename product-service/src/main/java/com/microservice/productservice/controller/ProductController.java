@@ -59,6 +59,12 @@ public class ProductController {
         return productService.getProductByProductId(productId);
     }
 
+    @GetMapping("skucode/{skucode}")
+    @ResponseStatus(HttpStatus.OK)
+    public ProductResponse getBySkuCode(@PathVariable String skucode) {
+        return productService.getProductBySkuCode(skucode);
+    }
+
     @GetMapping("/tags")
     @ResponseStatus(HttpStatus.OK)
     public List<ProductResponse> getAllByTags(@RequestParam("tag") List<String> tags) {

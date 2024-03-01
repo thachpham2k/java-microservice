@@ -22,6 +22,7 @@ public class ProductService {
     public void createProduct(ProductRequest productRequest) {
         // Create new product
         Product product = Product.builder()
+                .skuCode(productRequest.getSkuCode())
                 .name(productRequest.getName())
                 .description(productRequest.getDescription())
                 .price(productRequest.getPrice())
@@ -44,6 +45,7 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
         // Update product information
+        product.setSkuCode(productRequest.getSkuCode());
         product.setName(productRequest.getName());
         product.setDescription(productRequest.getDescription());
         product.setPrice(productRequest.getPrice());
@@ -68,6 +70,10 @@ public class ProductService {
             .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId)));
     }
 
+    public ProductResponse getProductBySkuCode(String skucode) {
+        return mapToProductResponse(productRepository.findBySkuCode(skucode));
+    }
+
     public List<ProductResponse> getProductsByTags(List<String> tags) {
         List<Product> products = productRepository.findByTagsIn(tags);
 
@@ -85,6 +91,7 @@ public class ProductService {
     private ProductResponse mapToProductResponse(Product product) {
         return ProductResponse.builder()
                 .id(product.getId())
+                .skuCode(product.getSkuCode())
                 .name(product.getName())
                 .description(product.getDescription())
                 .price(product.getPrice())
